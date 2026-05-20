@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ömer Birtan | Yazılım Geliştirici</title>
+    <link rel="icon" type="image/png" href="Resimler/fvc.png">
+    
+    <style>
+        .card, .cert-item, .project-item {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* hover lift */
+.card:hover, .cert-item:hover, .project-item:hover {
+    transform: translateY(-10px) scale(1.01);
+    box-shadow: 0 0 25px rgba(0,242,254,0.2);
+    border-color: var(--primary);
+}
+
+/* moving glow line effect */
+.card::before, .cert-item::before, .project-item::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    transition: 0.5s;
+}
+
+.card:hover::before, 
+.cert-item:hover::before, 
+.project-item:hover::before {
+    left: 100%;
+}
+        /* --- 1. GENEL TASARIM VE DEĞİŞKENLER --- */
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --bg: #080b11;
+            --card-bg: rgba(17, 24, 39, 0.4);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body.theme-matrix {
+            --primary: #00ff41; --secondary: #008f11; --bg: #000000;
+            --card-bg: rgba(0, 20, 0, 0.6); --text: #00ff41; --text-muted: #008f11;
+        }
+
+        body.theme-cyberpunk {
+            --primary: #ff007f; --secondary: #00ffcc; --bg: #1a0826;
+            --card-bg: rgba(43, 11, 63, 0.5); --text: #ffffff; --text-muted: #f3ef00;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        html { 
+            scroll-behavior: smooth; 
+            scroll-snap-type: y mandatory; 
+            overflow-y: scroll;
+        }
+        
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            overflow-x: hidden; 
+            transition: background-color 0.5s ease, color 0.5s ease;
+            /* ÖZEL İMLEÇ İÇİN: Standart imleci gizliyoruz */
+            cursor: none; 
+        }
+
+        /* Standart imleci buton ve linklerde de gizle */
+        a, button, input, .cert-item, .theme-dot, .timeline-btn, .copy-btn { cursor: none !important; }
+
+        /* --- ÖZEL SİBER İMLEÇ STİLLERİ --- */
+        #custom-cursor-dot {
+            position: fixed; width: 6px; height: 6px; background-color: var(--primary);
+            border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background-color 0.3s;
+        }
+        #custom-cursor-ring {
+            position: fixed; width: 30px; height: 30px; border: 2px solid var(--primary);
+            border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%, -50%);
+            transition: transform 0.08s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s, height 0.3s, border-color 0.3s;
+            opacity: 0.7;
+        }
+        /* Etkileşim anında imleç büyütme sınıfları */
+        body.cursor-hover #custom-cursor-dot { width: 4px; height: 4px; }
+        body.cursor-hover #custom-cursor-ring { width: 45px; height: 45px; border-color: var(--secondary); background: rgba(0,242,254,0.05); }
+
+        /* --- 2. OTO-BİLEŞENLER VE ARKA PLAN --- */
+        #scroll-progress {
+            position: fixed; top: 70px; left: 0; width: 0%; height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            z-index: 1001; transition: width 0.1s ease-out;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        #particle-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none; opacity: 0.5;
+            will-change: transform;
+        }
+
+        #scroll-to-top {
+            position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px;
+            background: var(--card-bg); border: 1px solid var(--primary);
+            color: var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 1002;
+            box-shadow: 0 0 15px var(--primary);
+        }
+        #scroll-to-top.visible { opacity: 1; visibility: visible; }
+
+        /* --- 3. ARAYÜZ VE KARTLAR --- */
+        header {
+            position: fixed; top: 0; width: 100%; height: 70px;
+            background: rgba(8, 11, 17, 0.8); backdrop-filter: blur(20px);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 8%; z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        nav a { color: var(--text-muted); text-decoration: none; margin-left: 25px; font-weight: 600; transition: 0.3s; }
+        nav a:hover { color: var(--primary); }
+
+        .theme-switcher { display: flex; gap: 10px; margin-left: 20px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px; align-items: center; }
+        .theme-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; }
+
+        .sound-toggle-btn {
+            background: transparent; border: 1px solid var(--primary); color: var(--primary);
+            padding: 4px 10px; border-radius: 8px; font-size: 13px; font-weight: bold;
+            transition: all 0.3s ease; margin-left: 15px;
+        }
+        .sound-toggle-btn:hover { background: var(--primary); color: #080b11; }
+
+        section { 
+            min-height: 100vh; 
+            padding: 120px 8% 50px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+        
+        .card { 
+            background: var(--card-bg); border: 1px solid rgba(255,255,255,0.05); 
+            padding: 60px; border-radius: 30px; backdrop-filter: blur(10px); 
+            width: 100%; max-width: 900px; text-align: center;
+            transform-style: preserve-3d; transform: perspective(1000px); transition: transform 0.1s ease;
+        }
+        
+        /* Şifreli Yazı Çözülme Efekti İçin Sınıf: .scramble-target */
+        h2 { font-size: 48px; margin-bottom: 20px; transform: translateZ(30px); min-height: 1.2em; }
+        .typing-text { font-size: 24px; color: var(--primary); font-weight: bold; min-height: 1.2em; transform: translateZ(20px); }
+        p { font-size: 19px; line-height: 1.7; color: var(--text-muted); transform: translateZ(15px); }
+
+        /* --- ZAMAN ÇİZGELGESİ STİLLERİ --- */
+        .timeline-wrapper {
+            display: flex; gap: 30px; margin-top: 30px; text-align: left;
+            background: rgba(0,0,0,0.2); padding: 25px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.03); transform: translateZ(10px);
+        }
+        .timeline-nav {
+            display: flex; flex-direction: column; gap: 12px; min-width: 140px;
+            border-right: 2px solid rgba(255,255,255,0.05); padding-right: 15px;
+        }
+        .timeline-btn {
+            background: transparent; border: none; color: var(--text-muted);
+            padding: 10px 15px; text-align: left; font-size: 16px; font-weight: bold;
+            border-radius: 8px; transition: all 0.3s ease;
+        }
+        .timeline-btn.active, .timeline-btn:hover {
+            color: var(--primary); background: rgba(0, 242, 254, 0.05);
+            padding-left: 22px;
+        }
+        .timeline-content { flex: 1; padding-left: 10px; display: flex; flex-direction: column; justify-content: center; }
+        .timeline-pane { display: none; animation: fadeIn 0.5s ease forwards; }
+        .timeline-pane.active { display: block; }
+
+        .cv-download-btn {
+            display: inline-flex; align-items: center; gap: 10px; margin-top: 25px;
+            background: transparent; border: 2px solid var(--primary); color: var(--primary);
+            padding: 12px 28px; border-radius: 14px; font-weight: bold; font-size: 16px;
+            transition: all 0.3s ease; text-decoration: none;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.1); transform: translateZ(15px);
+        }
+        .cv-download-btn:hover {
+            background: var(--primary); color: #080b11;
+            box-shadow: 0 0 25px var(--primary); transform: translateZ(15px) scale(1.03);
+        }
+
+        /* --- 4. SERTİFİKA VE PROJE ALANLARI --- */
+        .cert-container, .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-top: 30px; }
+        
+        .cert-item, .project-item { 
+            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255,255,255,0.05); 
+            padding: 25px; border-radius: 20px; text-align: left; transition: all 0.4s ease;
+        }
+        .cert-item:hover, .project-item:hover { transform: translateY(-5px); border-color: var(--primary); }
+        
+        .badge-tag { 
+            display: inline-block; font-size: 12px; font-weight: bold; padding: 4px 10px; 
+            border-radius: 6px; background: rgba(0, 242, 254, 0.1); color: var(--primary); margin-bottom: 15px; 
+        }
+
+        .filter-buttons { display: flex; justify-content: center; gap: 15px; margin: 30px 0; }
+        .filter-btn { 
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.1); 
+            color: var(--text-muted); padding: 10px 24px; border-radius: 12px; 
+            font-weight: 600; transition: all 0.3s ease;
+        }
+        .filter-btn.active, .filter-btn:hover { 
+            background: linear-gradient(90deg, var(--primary), var(--secondary)); color: #080b11; 
+            border-color: transparent; box-shadow: 0 5px 15px rgba(0, 242, 254, 0.2);
+        }
+
+        /* --- 5. MODAL (AÇILIR PENCERE) --- */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(8, 11, 17, 0.85); backdrop-filter: blur(15px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: all 0.4s ease; z-index: 2000;
+        }
+        .modal.open { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: var(--card-bg); border: 2px solid var(--primary);
+            padding: 40px; border-radius: 24px; max-width: 500px; width: 90%;
+            text-align: center; box-shadow: 0 0 30px var(--primary);
+            transform: scale(0.8); transition: transform 0.4s ease;
+        }
+        .modal.open .modal-content { transform: scale(1); }
+        .close-btn {
+            background: var(--primary); color: #080b11; border: none;
+            padding: 8px 20px; border-radius: 8px; font-weight: bold;
+            margin-top: 25px; transition: 0.2s;
+        }
+
+        /* İletişim & Kopyalama */
+        .copy-container { 
+            display: inline-flex; align-items: center; background: rgba(0, 0, 0, 0.2); 
+            border: 1px solid rgba(255,255,255,0.08); padding: 12px 20px; border-radius: 14px; 
+            margin-top: 25px; gap: 15px; transform: translateZ(10px);
+        }
+        .copy-btn {
+            background: linear-gradient(90deg, var(--primary), var(--secondary)); border: none;
+            color: #080b11; font-weight: bold; padding: 8px 16px; border-radius: 8px;
+        }
+
+        /* --- 6. ZIYARETÇİ DEFTERİ --- */
+        .guestbook-input {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-radius: 12px; color: white; font-size: 16px; margin-top: 20px; outline: none;
+        }
+        .guestbook-input:focus { border-color: var(--primary); }
+        .msg-list { margin-top: 25px; text-align: left; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg-item { background: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 10px; font-size: 15px; border-left: 3px solid var(--primary); }
+    </style>
+</head>
+<body class="theme-default">
+    <div id="custom-cursor-dot"></div>
+    <div id="custom-cursor-ring"></div>
+
+    <div id="scroll-progress"></div>
+    <canvas id="particle-canvas"></canvas>
+    <button id="scroll-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'})">↑</button>
+
+    <div id="cert-modal" class="modal">
+        <div class="modal-content">
+            <span class="badge-tag" style="margin-bottom: 10px;">Bilgi Teknolojileri ve İletişim Kurumu</span>
+            <h3 id="modal-title" style="font-size:24px; margin-bottom:15px; color:var(--primary)">Sertifika Başlığı</h3>
+            <p id="modal-desc" style="font-size:16px;">Sertifika detayları buraya gelecek...</p>
+            <button class="close-btn" onclick="closeModal()">Kapat</button>
+        </div>
+    </div>
+
+    <header>
+        <h1 style="font-size: 22px;">Ömer Birtan<span style="color:var(--primary)">.</span></h1>
+        <div style="display:flex; align-items:center;">
+            <nav>
+                <a href="#anasayfa" class="sfx">Ana Sayfa</a> 
+                <a href="#ozgecmis" class="sfx">Özgeçmiş</a> 
+                <a href="#sertifikalar" class="sfx">Sertifikalarım</a> 
+                <a href="#projeler" class="sfx">Projelerim</a> 
+                <a href="#iletisim" class="sfx">İletişim</a> 
+            </nav>
+            <div class="theme-switcher">
+                <div class="theme-dot" style="background:#00f2fe" onclick="changeTheme('default')"></div>
+                <div class="theme-dot" style="background:#00ff41" onclick="changeTheme('matrix')"></div>
+                <div class="theme-dot" style="background:#ff007f" onclick="changeTheme('cyberpunk')"></div>
+                <button id="soundToggle" class="sound-toggle-btn" onclick="toggleSound()">SES: AÇIK</button>
+            </div>
+        </div>
+    </header>
+
+    <section id="anasayfa">
+        <div class="card tilt-target">
+            <h2 class="scramble-target" data-value="Merhaba, Ben Ömer Birtan">Merhaba, Ben Ömer Birtan</h2>
+            <div class="typing-text" id="typewriter"></div>
+            <p style="margin-top: 20px;">Fütüristik vizyonla kodlanmış yeni nesil portfolyo alanına hoş geldin.</p>
+        </div>
+    </section>
+
+    <section id="ozgecmis">
+        <div class="card tilt-target">
+            <h2 class="scramble-target" data-value="Özgeçmiş">Özgeçmiş</h2>
+            <p>Kariyer yolculuğumun önemli dönüm noktalarını keşfedin.</p>
+            
+    <div style="
+        display:flex;
+        justify-content:center;
+        margin:35px 0;
+    ">
+
+        <img src="Resimler/Favicon/03286ac7-65d5-4c46-9f09-e527ac42da36.jpg"
+            alt="Ömer Birtan"
+            style="
+                width:220px;
+                height:220px;
+                object-fit:cover;
+                border-radius:50%;
+                border:4px solid var(--primary);
+                box-shadow:
+                    0 0 20px var(--primary),
+                    0 0 60px rgba(0,242,254,0.3);
+                transition:0.4s ease;
+            "
+            onmouseover="this.style.transform='scale(1.05)'"
+            onmouseout="this.style.transform='scale(1)'">
+    </div>
+
+
+            
+            <div class="timeline-wrapper">
+                <div class="timeline-nav">
+                    <button class="timeline-btn active sfx" onclick="switchTimeline(this, 'pane-1')">2025 - Şimdi</button>
+                    <button class="timeline-btn sfx" onclick="switchTimeline(this, 'pane-2')">2023 - 2025</button>
+                    <button class="timeline-btn sfx" onclick="switchTimeline(this, 'pane-3')">Odağım</button>
+                </div>
+                <div class="timeline-content">
+                    <div id="pane-1" class="timeline-pane active">
+                        <h3 style="color:white; margin-bottom:5px;">Kıdemli Web Geliştirici</h3>
+                        <h4 style="color:var(--primary); font-size:15px; margin-bottom:10px;">Siber Tasarım & Teknoloji Ajansı</h4>
+                        <p style="font-size:16px;">Yüksek etkileşimli, animasyonlu ve performans optimizasyonlu yeni nesil kurumsal web projelerinin geliştirilmesine liderlik ediyorum.</p>
+                    </div>
+                    <div id="pane-2" class="timeline-pane">
+                        <h3 style="color:white; margin-bottom:5px;">Full Stack Developer</h3>
+                        <h4 style="color:var(--primary); font-size:15px; margin-bottom:10px;">Nexus Yazılım Çözümleri</h4>
+                        <p style="font-size:16px;">Dinamik sepet mimarilerine sahip e-ticaret platformlarının ön yüz ve arka yüz mimari entegrasyon süreçlerini başarıyla yürüttüm.</p>
+                    </div>
+                    <div id="pane-3" class="timeline-pane">
+                        <h3 style="color:white; margin-bottom:5px;">Uzmanlık Alanlarım</h3>
+                        <h4 style="color:var(--primary); font-size:15px; margin-bottom:10px;">Yazılım Geliştirme Teknolojileri</h4>
+                        <p style="font-size:16px; font-family:monospace; line-height:1.5;">
+                            > HTML5, CSS3, ES6+ JavaScript<br>
+                            > Node.js, Express, RESTful APIs<br>
+                            > UI/UX Animation Engine & Canvas API
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <a href="omer_birtan_cv.pdf" download class="cv-download-btn sfx">
+                <span>📄 Profesyonel CV'mi İndir (PDF)</span>
+            </a>
+        </div>
+    </section>
+
+    <section id="sertifikalar">
+        <div class="card tilt-target">
+            <h2 class="scramble-target" data-value="Sertifikalarım">Sertifikalarım</h2>
+            <p>Eğitim sürecimde kazandığım doğrulanmış başarı belgeleri. İncelemek için tıklayın.</p>
+            
+            <div class="cert-container">
+                <div class="cert-item" onclick="openModal('Yapay Zeka Dünyasına Giriş', 'Bu değerli sertifikayı 15.05.2026 tarihinde Bilgi Teknolojileri ve İletişim Kurumu bünyesinde başarıyla tamamlayarak almaya hak kazandım.')">
+                    <span class="badge-tag">Bilgi Teknolojileri ve İletişim Kurumu</span>
+                    <h4 style="color:white; margin-top:5px;">Yapay Zeka Dünyasına Giriş</h4>
+                    <p style="font-size:14px; margin-top:5px;">Tarih: 15.05.2026</p>
+                </div>
+                <div class="cert-item" onclick="openModal('İletişim ve Network Yönetimi', 'Bu uzmanlık sertifikasını 21.08.2024 tarihinde Bilgi Teknolojileri ve İletişim Kurumu üzerinden ağ teknolojileri ve iletişim protokolleri alanında elde ettim.')">
+                    <span class="badge-tag">Bilgi Teknolojileri ve İletişim Kurumu</span>
+                    <h4 style="color:white; margin-top:5px;">İletişim ve Network Yönetimi</h4>
+                    <p style="font-size:14px; margin-top:5px;">Tarih: 21.08.2024</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="projeler">
+        <div class="card tilt-target">
+            <h2 class="scramble-target" data-value="Projelerim">Projelerim</h2>
+            <p>Geliştirdiğim güncel yazılım çözümleri ve deneysel projeler.</p>
+            
+            <div class="filter-buttons">
+                <button class="filter-btn active sfx" onclick="filterProjects('all')">Hepsi</button>
+                <button class="filter-btn sfx" onclick="filterProjects('web')">Web</button>
+                <button class="filter-btn sfx" onclick="filterProjects('mobil')">Mobil</button>
+            </div>
+
+            <div class="projects-grid">
+                <div class="project-item" data-category="web">
+                    <span class="project-tag">Web Geliştirme</span>
+                    <h3 style="margin-bottom:10px;">E-Ticaret Arayüzü</h3>
+                    <p style="font-size:15px;">Dinamik sepet mimarisine sahip modern bir e-ticaret uygulaması.</p>
+                </div>
+                <div class="project-item" data-category="mobil">
+                    <span class="project-tag">Mobil Uygulama</span>
+                    <h3 style="margin-bottom:10px;">Finans Takip Modülü</h3>
+                    <p style="font-size:15px;">Bütçeleri optimize eden fütüristik mobil takip sistemi.</p>
+                </div>
+                <div class="project-item" data-category="web">
+                    <span class="project-tag">Web Geliştirme</span>
+                    <h3 style="margin-bottom:10px;">Siber Dashboard</h3>
+                    <p style="font-size:15px;">Canlı veri analitiği sunan, şeffaf cam efektli yönetim paneli.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="iletisim">
+        <div class="card tilt-target">
+            <h2 class="scramble-target" data-value="İletişim & Defter">İletişim & Defter</h2>
+            <p>Benimle iletişime geçin veya aşağıdaki alana anonim bir siber mesaj bırakın!</p>
+            
+            <div class="copy-container">
+                <span id="email-text" style="font-family:monospace; font-weight:bold;">omerbirtan772@email.com</span>
+                <button class="copy-btn sfx" onclick="copyEmail()" id="copyBtn">Kopyala</button>
+            </div>
+
+            <input type="text" id="gb-input" class="guestbook-input" placeholder="Buraya siteyle ilgili bir siber not bırak ve Enter'a bas..." onkeypress="addMessage(event)">
+            <div class="msg-list" id="msg-container"></div>
+        </div>
+    </section>
+
+    <script>
+        // --- 1. SES SİSTEMİ DURUM KONTROLÜ ---
+        let isSoundEnabled = localStorage.getItem('sound_enabled') !== 'false';
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSfx(freq = 800, dur = 0.05) {
+            if (!isSoundEnabled) return; 
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.frequency.value = freq; gain.gain.value = 0.01;
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + dur);
+        }
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            localStorage.setItem('sound_enabled', isSoundEnabled);
+            const btn = document.getElementById('soundToggle');
+            if (isSoundEnabled) {
+                btn.innerText = "SES: AÇIK";
+                playSfx(800, 0.1);
+            } else {
+                btn.innerText = "SES: KAPALI";
+            }
+        }
+        document.getElementById('soundToggle').innerText = isSoundEnabled ? "SES: AÇIK" : "SES: KAPALI";
+
+        function changeTheme(t) { 
+            document.body.className = t === 'default' ? '' : 'theme-' + t; 
+            playSfx(400, 0.1); 
+        }
+
+        function bindSfx() {
+            document.querySelectorAll('.sfx, .cert-item, .timeline-btn, .filter-btn').forEach(el => {
+                el.removeEventListener('mouseenter', () => playSfx());
+                el.addEventListener('mouseenter', () => playSfx());
+            });
+        }
+
+        // --- ÖZEL SİBER İMLEÇ MOTORU ---
+        const cursorDot = document.getElementById('custom-cursor-dot');
+        const cursorRing = document.getElementById('custom-cursor-ring');
+
+        window.addEventListener('mousemove', (e) => {
+            cursorDot.style.left = e.clientX + 'px';
+            cursorDot.style.top = e.clientY + 'px';
+            cursorRing.style.left = e.clientX + 'px';
+            cursorRing.style.top = e.clientY + 'px';
+        });
+
+        document.body.addEventListener('mouseover', (e) => {
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('.cert-item') || e.target.classList.contains('theme-dot') || e.target.tagName === 'INPUT' || e.target.classList.contains('copy-btn')) {
+                document.body.classList.add('cursor-hover');
+            }
+        });
+        document.body.addEventListener('mouseout', (e) => {
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('.cert-item') || e.target.classList.contains('theme-dot') || e.target.tagName === 'INPUT' || e.target.classList.contains('copy-btn')) {
+                document.body.classList.remove('cursor-hover');
+            }
+        });
+
+        // --- YEŞİL YAZILI YÜKLEME EKRANI BU SÜRÜMDE KALDIRILDI ---
+
+        // --- ŞİFRELİ YAZI ÇÖZÜLME ALGORİTMASI (SCRAMBLE TEXT) ---
+        const chars = '!<>-_\\/[]{}—=+*^?#________';
+        function triggerScramble(element) {
+            if(!element) return;
+            const originalText = element.getAttribute('data-value');
+            let iteration = 0;
+            clearInterval(element.scrambleInterval);
+            
+            element.scrambleInterval = setInterval(() => {
+                element.innerText = originalText.split("").map((letter, index) => {
+                    if(index < iteration) return originalText[index];
+                    return chars[Math.floor(Math.random() * chars.length)];
+                }).join("");
+                
+                if(iteration >= originalText.length) {
+                    clearInterval(element.scrambleInterval);
+                }
+                iteration += 1 / 3;
+            }, 30);
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    const target = entry.target.querySelector('.scramble-target');
+                    if(target) {
+                        playSfx(900, 0.06);
+                        triggerScramble(target);
+                    }
+                }
+            });
+        }, { threshold: 0.4 });
+
+        document.querySelectorAll('section').forEach(sec => observer.observe(sec));
+
+        // --- 2. DİNAMİK YAZI (TYPEWRITER) ---
+        const words = ["Web Geliştiriciyim.", "Problem Çözücüyüm.", "Siber Tasarımcıyım."];
+        let i = 0, j = 0, isDeleting = false, textEl = document.getElementById('typewriter');
+        function type() {
+            let current = words[i], speed = isDeleting ? 50 : 100;
+            textEl.innerHTML = current.substring(0, j) + '<span style="border-right:2px solid var(--primary); margin-left:5px;"></span>';
+            if(!isDeleting && j < current.length) j++;
+            else if(isDeleting && j > 0) j--;
+            else { isDeleting = !isDeleting; if(!isDeleting) i = (i + 1) % words.length; speed = 1500; }
+            setTimeout(type, speed);
+        }
+        type();
+
+        // --- 3. İLERLEME ÇUBUĞU VE PARALAKS ETKİSİ ---
+        const canvas = document.getElementById('particle-canvas');
+        window.onscroll = () => {
+            let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            let scrolled = (winScroll / height) * 100;
+            
+            document.getElementById("scroll-progress").style.width = scrolled + "%";
+            document.getElementById("scroll-to-top").classList.toggle('visible', winScroll > 500);
+            canvas.style.transform = `translateY(${winScroll * 0.3}px)`;
+        };
+
+        // --- ZAMAN ÇİZGELGESİ PANEL GEÇİŞİ ---
+        function switchTimeline(btn, paneId) {
+            playSfx(700, 0.08);
+            document.querySelectorAll('.timeline-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.timeline-pane').forEach(p => p.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(paneId).classList.add('active');
+        }
+
+        // --- 4. FARE ETKİLEŞİMLİ PLEXUS MOTORU ---
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mouse = { x: null, y: null, radius: 180 };
+        window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+
+        function initCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.onresize = initCanvas; initCanvas();
+        
+        class Particle {
+            constructor() { 
+                this.x = Math.random() * canvas.width; 
+                this.y = Math.random() * canvas.height; 
+                this.vx = (Math.random() - 0.5) * 1.2; 
+                this.vy = (Math.random() - 0.5) * 1.2; 
+            }
+            update() { 
+                if (mouse.x !== null && mouse.y !== null) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.hypot(dx, dy);
+                    if (distance < mouse.radius) {
+                        let force = (mouse.radius - distance) / mouse.radius;
+                        this.x += (dx / distance) * force * 1.8;
+                        this.y += (dy / distance) * force * 1.8;
+                    }
+                }
+                this.x += this.vx; this.y += this.vy; 
+                if(this.x < 0 || this.x > canvas.width) this.vx *= -1; 
+                if(this.y < 0 || this.y > canvas.height) this.vy *= -1; 
+            }
+            draw() { 
+                ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary'); 
+                ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI * 2); ctx.fill(); 
+            }
+        }
+        for(let i = 0; i < 85; i++) particles.push(new Particle());
+        
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let activeColor = getComputedStyle(document.body).getPropertyValue('--primary');
+            
+            particles.forEach((p, idx) => { 
+                p.update(); 
+                p.draw(); 
+                for(let j = idx + 1; j < particles.length; j++) {
+                    let distance = Math.hypot(p.x - particles[j].x, p.y - particles[j].y);
+                    if(distance < 140) {
+                        ctx.strokeStyle = activeColor;
+                        ctx.lineWidth = (1 - (distance / 140)) * 0.6;
+                        ctx.globalAlpha = (1 - (distance / 140)) * 0.35;
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(particles[j].x, particles[j].y); ctx.stroke();
+                    }
+                }
+            });
+            ctx.globalAlpha = 1.0;
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- 5. PROJE FİLTRELEME ---
+        function filterProjects(category) {
+            playSfx(500, 0.08);
+            const items = document.querySelectorAll('.project-item');
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            items.forEach(item => {
+                item.style.display = (category === 'all' || item.getAttribute('data-category') === category) ? 'block' : 'none';
+            });
+        }
+
+        // --- 6. E-POSTA KOPYALAMA ---
+        function copyEmail() {
+            playSfx(900, 0.15);
+            const emailText = document.getElementById('email-text').innerText;
+            const copyBtn = document.getElementById('copyBtn');
+            navigator.clipboard.writeText(emailText).then(() => {
+                copyBtn.innerText = "Kopyalandı! 🚀";
+                setTimeout(() => { copyBtn.innerText = "Kopyala"; }, 2000);
+            });
+        }
+
+        // --- 7. SERTİFİKA PENCERESİ (MODAL) ---
+        function openModal(title, desc) {
+            playSfx(600, 0.12);
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('cert-modal').classList.add('open');
+        }
+        function closeModal() {
+            playSfx(300, 0.05);
+            document.getElementById('cert-modal').classList.remove('open');
+        }
+
+        // --- 8. 3D TILT EFFECT ---
+        const cards = document.querySelectorAll('.tilt-target');
+        cards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left - (rect.width/2);
+                const y = e.clientY - rect.top - (rect.height/2);
+                const tiltX = (y / (rect.height/2)) * -10;
+                const tiltY = (x / (rect.width/2)) * 10;
+                card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg)`;
+            });
+        });
+
+        // --- 9. ZİYARETÇİ DEFTERİ ---
+        function loadMessages() {
+            const container = document.getElementById('msg-container');
+            container.innerHTML = '';
+            let saved = JSON.parse(localStorage.getItem('omer_birtan_messages')) || ["Harika bir fütüristik tasarım alanı! 🚀", "Kod yapısı tertemiz olmuş. 💻"];
+            saved.forEach(msg => {
+                let div = document.createElement('div'); div.className = 'msg-item'; div.innerText = msg;
+                container.appendChild(div);
+            });
+        }
+        function addMessage(e) {
+            if(e.key === 'Enter') {
+                const input = document.getElementById('gb-input');
+                if(!input.value.trim()) return;
+                playSfx(1000, 0.2);
+                let saved = JSON.parse(localStorage.getItem('omer_birtan_messages')) || ["Harika bir fütüristik tasarım alanı! 🚀", "Kod yapısı tertemiz olmuş. 💻"];
+                saved.unshift(input.value.trim());
+                localStorage.setItem('omer_birtan_messages', JSON.stringify(saved));
+                input.value = '';
+                loadMessages();
+            }
+        }
+        loadMessages();
+        bindSfx();
+    </script>
+</body>
+</html> 
